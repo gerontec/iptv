@@ -10,7 +10,7 @@ every stream is copied (`-c copy`), so one channel costs about 1 % of a CPU core
 
 | Region | Served by | Why |
 |---|---|---|
-| Europe (at, it, ... and cable TV) | the home server (`<cc>.heissa.de` -> dell) | European sources and the FRITZ!Box cable tuner are reachable from the home line; viewers at home get the stream in one LAN hop over IPv6. |
+| Europe (at, it, ..., cable TV) and music TV | the home server (`<cc>.heissa.de` -> dell) | European sources and the FRITZ!Box cable tuner are reachable from the home line; viewers at home get the stream in one LAN hop over IPv6. |
 | USA (`us.heissa.de`) and Russia (`ru.heissa.de`) | heissa.de, a VPS in the USA | US sources need a US exit. Russian channels are blocked inside the EU (sanctions since 2022: EU ISPs and CDNs must not carry them), so they cannot be fetched from a European line at all. heissa relays both itself (local hls-relay, `iptv-country.conf`); the home server is not involved. |
 
 External viewers reach the European sites over IPv4 through heissa.de, which proxies to the home
@@ -24,7 +24,8 @@ server over OpenVPN; at home the AAAA record points straight to the home server.
 | Cable watchdog | `bin/orf1_hls_watchdog.sh`, `systemd/orf1-hls-watchdog.*` | Every minute: restart ffmpeg if the playlist is older than 30 s or a segment is larger than 50 MB (DTS wrap freezes ffmpeg and makes it write one huge segment per hour). Deletes leftovers. |
 | On-demand buffer | `systemd/rai3bz-hls.service`, `systemd/rai3bz-hls.path`, `www/it/rai3bz.php` | Internet channel buffered by the server (60 s window), started only when someone asks for it. |
 | Idle stop | `bin/tvbuf_idle.sh`, `systemd/tvbuf-idle.*`, `tmpfiles.d/tvbuf.conf` | Every minute: stop buffers nobody requested for 5 min. |
-| Player pages | `www/at/`, `www/it/` | hls.js player page per country, channel buttons, one `.m3u` per channel for VLC/Kodi, `list.m3u` with all channels. |
+| Generic buffer (music) | `systemd/tvbuf@.service`, `systemd/tvbuf-start.*`, `bin/tvbuf_start.sh`, `tvbuf/*.conf`, `www/music/buf.php` | Same idea for any number of channels: one template unit, one small config per channel, one PHP entry. |
+| Player pages | `www/at/`, `www/it/`, `www/music/` | hls.js player page per country, channel buttons, one `.m3u` per channel for VLC/Kodi, `list.m3u` with all channels. |
 
 ## On-demand buffer
 
@@ -63,6 +64,24 @@ Measured on an i7 desktop (20 threads):
 
 With the on-demand buffer nothing is downloaded while nobody watches.
 
+## Generic buffer: tvbuf@<id> (music.heissa.de)
+
+79 free music TV channels (H.264), each only buffered while someone watches.
+
+- `/etc/tvbuf/<id>.conf`: `SRC=<HLS URL>` and `PROGRAM=<variant index>` (highest variant up to 5 Mbit/s,
+  so ffmpeg downloads exactly one variant).
+- `tvbuf@.service` runs ffmpeg as `www-data` into `/srv/tvbuf/<id>` (60 s window, 6 s segments).
+- `buf.php?ch=<id>` validates the id against `/etc/tvbuf`, touches `/run/tvbuf/seen/<id>`, and if the
+  playlist is not fresh drops `/run/tvbuf/want/<id>`. `tvbuf-start.path` (`DirectoryNotEmpty`) runs
+  `tvbuf_start.sh`, which starts `tvbuf@<id>` (at most 12 buffers at once to protect the line).
+- `tvbuf_idle.sh` stops every `tvbuf@*` without a viewer for 5 min.
+- `m3u.php?ch=<id>` returns a one-channel playlist for VLC; `list.m3u` holds all channels.
+- Cold start measured at 3–6 s; slow sources (first segment after ~20 s) are covered by the player retrying.
+
+Channel list: built from iptv-org (music category) plus an older own list, each URL checked from the
+home line (playlist, one segment, then 20 s with the production ffmpeg command). Add a channel by
+dropping a new `/etc/tvbuf/<id>.conf` and adding it to `channels.json` / `list.m3u`.
+
 ## Add a channel
 
 1. Copy `systemd/rai3bz-hls.service` and `systemd/rai3bz-hls.path` to `<ch>-hls.*`, set the source
@@ -82,7 +101,9 @@ sudo cp systemd/* /etc/systemd/system/
 sudo cp bin/* /usr/local/bin/
 sudo cp tmpfiles.d/tvbuf.conf /etc/tmpfiles.d/ && sudo systemd-tmpfiles --create
 sudo systemctl daemon-reload
-sudo systemctl enable --now orf1-hls orf1-http orf1-hls-watchdog.timer rai3bz-hls.path tvbuf-idle.timer
+sudo mkdir -p /etc/tvbuf && sudo cp tvbuf/*.conf /etc/tvbuf/
+sudo install -d -o www-data -g www-data /srv/tvbuf
+sudo systemctl enable --now orf1-hls orf1-http orf1-hls-watchdog.timer rai3bz-hls.path tvbuf-start.path tvbuf-idle.timer
 ```
 
 Copy `www/<site>/` to the web root of each site. The pages load hls.js 1.5.13 from cdnjs.

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music TV</title>
+<style>
+  :root { --bg:#111; --fg:#eee; --muted:#999; --link:#8ab4f8; --row:#1b1b1b; --on:#2f5fb3; --line:#2a2a2a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.4 system-ui,sans-serif; }
+  main { max-width:1200px; margin:0 auto; padding:16px; display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:16px; }
+  @media (max-width:800px) { main { grid-template-columns:1fr; } }
+  h1 { font-size:1.2em; margin:0 0 12px; grid-column:1/-1; }
+  video { width:100%; aspect-ratio:16/9; background:#000; border-radius:6px; display:block; }
+  #now { color:var(--muted); margin:10px 0 0; min-height:1.4em; }
+  aside { display:flex; flex-direction:column; min-height:0; }
+  input { width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--line); background:#000; color:var(--fg); font:inherit; margin-bottom:8px; }
+  ul { list-style:none; margin:0; padding:0; overflow:auto; max-height:70vh; border:1px solid var(--line); border-radius:6px; }
+  li { display:flex; align-items:center; gap:8px; padding:7px 10px; border-bottom:1px solid var(--line); cursor:pointer; }
+  li:last-child { border-bottom:0; }
+  li:hover { background:var(--row); }
+  li.on { background:var(--on); }
+  li .cc { font-size:.75em; color:var(--muted); width:2em; text-transform:uppercase; flex:none; }
+  li .n { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  li a { color:#f90; font-size:.75em; text-decoration:none; flex:none; }
+  p.foot { color:var(--muted); font-size:.9em; grid-column:1/-1; margin:0; }
+  a { color:var(--link); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Music TV &middot; <span id="count"></span> freie Musiksender &middot; gepuffert auf dem dell</h1>
+  <section>
+    <video id="v" controls autoplay playsinline></video>
+    <p id="now">Sender rechts wählen.</p>
+  </section>
+  <aside>
+    <input id="q" type="search" placeholder="Sender suchen …" autocomplete="off">
+    <ul id="list"></ul>
+  </aside>
+  <p class="foot">Ein Sender startet beim ersten Abruf auf dem dell (einige Sekunden) und stoppt 5 min nach dem letzten Zuschauer.
+    Kodi/VLC: <a href="list.m3u">list.m3u</a> &middot; <b>VLC</b> öffnet einen einzelnen Sender.</p>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
+<script>
+  const v = document.getElementById('v'), list = document.getElementById('list'), now = document.getElementById('now'), q = document.getElementById('q');
+  let hls = null, CH = [];
+  function play(c, li) {
+    for (const x of list.children) x.classList.toggle('on', x === li);
+    const url = 'buf.php?ch=' + c.id;
+    now.textContent = c.name + ' – Puffer startet …';
+    history.replaceState(null, '', '#' + c.id);
+    if (hls) { hls.destroy(); hls = null; }
+    if (window.Hls && Hls.isSupported()) {
+      hls = new Hls({ liveSyncDurationCount: 3, manifestLoadingTimeOut: 30000, manifestLoadingMaxRetry: 4 });
+      hls.on(Hls.Events.MANIFEST_PARSED, () => { now.textContent = c.name; });
+      hls.on(Hls.Events.ERROR, (e, d) => {
+        if (!d.fatal) return;
+        if (d.type === Hls.ErrorTypes.NETWORK_ERROR) { now.textContent = c.name + ' – Sender antwortet nicht'; hls.startLoad(); }
+        else if (d.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+      });
+      hls.loadSource(url); hls.attachMedia(v);
+    } else if (v.canPlayType('application/vnd.apple.mpegurl')) { v.src = url; v.onloadedmetadata = () => { now.textContent = c.name; }; }
+    v.play().catch(() => {});
+  }
+  function render() {
+    const f = q.value.trim().toLowerCase();
+    list.replaceChildren();
+    for (const c of CH) {
+      if (f && !c.name.toLowerCase().includes(f) && !(c.cc || '').includes(f)) continue;
+      const li = document.createElement('li');
+      const cc = document.createElement('span'); cc.className = 'cc'; cc.textContent = c.cc || '';
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = c.name; n.title = c.name;
+      const a = document.createElement('a'); a.href = 'm3u.php?ch=' + c.id; a.textContent = 'VLC'; a.title = 'In VLC öffnen';
+      a.onclick = ev => { ev.stopPropagation(); v.pause(); };
+      li.append(cc, n, a); li.onclick = () => play(c, li);
+      if ('#' + c.id === location.hash) li.classList.add('on');
+      list.appendChild(li);
+    }
+  }
+  q.oninput = render;
+  fetch('channels.json').then(r => r.json()).then(d => {
+    CH = d; document.getElementById('count').textContent = d.length; render();
+    const c = CH.find(c => '#' + c.id === location.hash);
+    if (c) play(c, [...list.children].find(li => li.classList.contains('on')));
+  });
+</script>
+</body>
+</html>

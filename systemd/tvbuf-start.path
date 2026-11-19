@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for viewer requests of on-demand HLS buffers
+
+[Path]
+DirectoryNotEmpty=/run/tvbuf/want
+Unit=tvbuf-start.service
+
+[Install]
+WantedBy=paths.target

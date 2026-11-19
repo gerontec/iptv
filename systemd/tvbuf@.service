@@ -1,0 +1,14 @@
+[Unit]
+Description=On-demand HLS buffer %i (60 s window)
+After=network-online.target
+
+[Service]
+User=www-data
+Group=www-data
+EnvironmentFile=/etc/tvbuf/%i.conf
+ExecStartPre=/bin/sh -c "rm -rf /srv/tvbuf/%i && mkdir -p /srv/tvbuf/%i"
+# -rw_timeout drops dead upstream connections after 15 s; PROGRAM selects one HLS variant
+ExecStart=/usr/bin/ffmpeg -nostdin -hide_banner -loglevel warning -rw_timeout 15000000 -user_agent Mozilla/5.0 -analyzeduration 10M -probesize 10M -i ${SRC} -map 0:p:${PROGRAM}:v:0? -map 0:p:${PROGRAM}:a:0? -c copy -f hls -hls_time 6 -hls_list_size 10 -hls_flags delete_segments+omit_endlist+program_date_time -hls_segment_filename /srv/tvbuf/%i/seg_%%05d.ts /srv/tvbuf/%i/index.m3u8
+Restart=always
+RestartSec=5
+SuccessExitStatus=255

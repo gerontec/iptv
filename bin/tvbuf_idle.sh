@@ -13,3 +13,13 @@ for ch in $CHANNELS; do
         systemctl stop $svc
     fi
 done
+
+# generic buffers tvbuf@<id> (music.heissa.de); buf.php touches /run/tvbuf/seen/<id>
+for unit in $(systemctl list-units --no-legend --state=active,activating "tvbuf@*" | awk "{print \$1}"); do
+    id=${unit#tvbuf@}; id=${id%.service}
+    age=$(( $(date +%s) - $(stat -c %Y /run/tvbuf/seen/$id 2>/dev/null || echo 0) ))
+    if [ "$age" -gt "$IDLE" ]; then
+        logger -t tvbuf "stop $unit: no viewer for ${age}s"
+        systemctl stop "$unit"
+    fi
+done
