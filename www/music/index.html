@@ -53,6 +53,7 @@
   const gbox = document.getElementById('genres');
   function genres() {
     gbox.replaceChildren();
+    if (new Set(CH.map(c => c.group)).size < 2) return;   // one genre only: no buttons
     for (const g of ['Alle', ...new Set(CH.map(c => c.group))]) {
       const b = document.createElement('button'); b.textContent = g; b.classList.toggle('on', g === genre);
       b.onclick = () => { genre = g; genres(); render(); }; gbox.appendChild(b);
