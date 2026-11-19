@@ -14,6 +14,10 @@
   video { width:100%; aspect-ratio:16/9; background:#000; border-radius:6px; display:block; }
   #now { color:var(--muted); margin:10px 0 0; min-height:1.4em; }
   aside { display:flex; flex-direction:column; min-height:0; }
+  #genres { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  #genres button { background:#262626; color:var(--fg); border:0; border-radius:6px; padding:6px 10px; font:inherit; font-size:.9em; cursor:pointer; }
+  #genres button.on { background:var(--on); }
+  li .g { font-size:.7em; color:var(--muted); flex:none; }
   input { width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--line); background:#000; color:var(--fg); font:inherit; margin-bottom:8px; }
   ul { list-style:none; margin:0; padding:0; overflow:auto; max-height:70vh; border:1px solid var(--line); border-radius:6px; }
   li { display:flex; align-items:center; gap:8px; padding:7px 10px; border-bottom:1px solid var(--line); cursor:pointer; }
@@ -29,12 +33,13 @@
 </head>
 <body>
 <main>
-  <h1>Music TV &middot; <span id="count"></span> freie Musiksender &middot; gepuffert auf dem dell</h1>
+  <h1>Music TV &middot; <span id="count"></span> freie Musik- und Kultursender &middot; gepuffert auf dem dell</h1>
   <section>
     <video id="v" controls autoplay playsinline></video>
     <p id="now">Sender rechts wählen.</p>
   </section>
   <aside>
+    <div id="genres"></div>
     <input id="q" type="search" placeholder="Sender suchen …" autocomplete="off">
     <ul id="list"></ul>
   </aside>
@@ -44,7 +49,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
 <script>
   const v = document.getElementById('v'), list = document.getElementById('list'), now = document.getElementById('now'), q = document.getElementById('q');
-  let hls = null, CH = [];
+  let hls = null, CH = [], genre = 'Alle';
+  const gbox = document.getElementById('genres');
+  function genres() {
+    gbox.replaceChildren();
+    for (const g of ['Alle', ...new Set(CH.map(c => c.group))]) {
+      const b = document.createElement('button'); b.textContent = g; b.classList.toggle('on', g === genre);
+      b.onclick = () => { genre = g; genres(); render(); }; gbox.appendChild(b);
+    }
+  }
   function play(c, li) {
     for (const x of list.children) x.classList.toggle('on', x === li);
     const url = 'buf.php?ch=' + c.id;
@@ -67,20 +80,22 @@
     const f = q.value.trim().toLowerCase();
     list.replaceChildren();
     for (const c of CH) {
-      if (f && !c.name.toLowerCase().includes(f) && !(c.cc || '').includes(f)) continue;
+      if (genre !== 'Alle' && c.group !== genre) continue;
+      if (f && !c.name.toLowerCase().includes(f) && !(c.cc || '').includes(f) && !c.group.toLowerCase().includes(f)) continue;
       const li = document.createElement('li');
       const cc = document.createElement('span'); cc.className = 'cc'; cc.textContent = c.cc || '';
       const n = document.createElement('span'); n.className = 'n'; n.textContent = c.name; n.title = c.name;
       const a = document.createElement('a'); a.href = 'm3u.php?ch=' + c.id; a.textContent = 'VLC'; a.title = 'In VLC öffnen';
       a.onclick = ev => { ev.stopPropagation(); v.pause(); };
-      li.append(cc, n, a); li.onclick = () => play(c, li);
+      const g = document.createElement('span'); g.className = 'g'; g.textContent = genre === 'Alle' && c.group !== 'Pop & Welt' ? c.group : '';
+      li.append(cc, n, g, a); li.onclick = () => play(c, li);
       if ('#' + c.id === location.hash) li.classList.add('on');
       list.appendChild(li);
     }
   }
   q.oninput = render;
   fetch('channels.json').then(r => r.json()).then(d => {
-    CH = d; document.getElementById('count').textContent = d.length; render();
+    CH = d; document.getElementById('count').textContent = d.length; genres(); render();
     const c = CH.find(c => '#' + c.id === location.hash);
     if (c) play(c, [...list.children].find(li => li.classList.contains('on')));
   });
