@@ -1,0 +1,9 @@
+[Unit]
+Description=Start Rai 3 Bozen buffer when a viewer requests it
+
+[Path]
+PathModified=/run/tvbuf/rai3bz.want
+Unit=rai3bz-hls.service
+
+[Install]
+WantedBy=paths.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Rai 3 TGR Bozen HLS buffer (pull from Akamai, 60 s window, on demand)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStartPre=/bin/bash -c "rm -f /srv/rai3bzhls/*.ts /srv/rai3bzhls/*.m3u8"
+# info level logs every "Opening ... for reading" with timestamp -> stalls visible in the journal
+ExecStart=/usr/bin/ffmpeg -nostdin -hide_banner -loglevel info -rw_timeout 15000000 -i https://tgrbolzano-live.akamaized.net/hls/live/2025560/tgrbolzano/tgrbolzano/playlist.m3u8 -map 0:v:0 -map 0:a:0 -c copy -f hls -hls_time 10 -hls_list_size 6 -hls_flags delete_segments+omit_endlist+program_date_time -hls_segment_filename /srv/rai3bzhls/seg_%%05d.ts /srv/rai3bzhls/index.m3u8
+Restart=always
+RestartSec=3
+SuccessExitStatus=255
+

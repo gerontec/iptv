@@ -1,0 +1,7 @@
+#EXTM3U
+#EXTINF:-1 tvg-id="LA7.it" group-title="Italia",LA7
+https://d3k8wzt41aflvx.cloudfront.net/LA7HD/Live.m3u8
+#EXTINF:-1 tvg-id="Nove.it" group-title="Italia",Nove
+https://streaming.aurora.enhanced.live/live/mpc/enl0eG1mLmVncmVzcy5mZDJ2eHI=/out/v1/IT_SIMULCAST/NOVE/CMAF/index.m3u8
+#EXTINF:-1 tvg-id="Rai3.it@TrentinoAltoAdigeBolzano" group-title="Italia",Rai 3 TGR Bozen
+https://it.heissa.de/rai3bz.php

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV Italia</title>
+<style>
+  :root { --bg:#111; --fg:#eee; --muted:#999; --link:#8ab4f8; --btn:#262626; --on:#2f5fb3; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.4 system-ui,sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:16px; }
+  video { width:100%; aspect-ratio:16/9; background:#000; border-radius:6px; }
+  h1 { font-size:1.2em; margin:0 0 12px; }
+  nav { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px; }
+  button { background:var(--btn); color:var(--fg); border:0; border-radius:6px; padding:8px 14px; font:inherit; cursor:pointer; }
+  button.on { background:var(--on); }
+  .ch { display:inline-flex; }
+  .ch button { border-radius:6px 0 0 6px; }
+  .ch a.vlc { background:#3a2a10; color:#f90; border-radius:0 6px 6px 0; padding:8px 10px; text-decoration:none; font-size:.85em; display:flex; align-items:center; }
+  .ch a.vlc:hover { background:#553d15; }
+  p { color:var(--muted); margin:10px 0 0; }
+  a { color:var(--link); }
+  #log { display:none; margin-top:10px; font:12px/1.35 ui-monospace,monospace; color:#9c9; background:#000; padding:8px; border-radius:6px; max-height:40vh; overflow:auto; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<main>
+  <h1>TV Italia &middot; offizielle Livestreams ohne Geosperre</h1>
+  <nav id="nav"></nav>
+  <video id="v" controls autoplay muted playsinline></video>
+  <p id="info"></p>
+  <div id="log"></div>
+  <p>Kodi/VLC: <a href="list.m3u">list.m3u</a> &middot; Rai 1/2/3 national und Mediaset sind außerhalb Italiens gesperrt.</p>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
+<script>
+  const CH = [
+    { id:'la7',  name:'LA7',            url:'https://d3k8wzt41aflvx.cloudfront.net/LA7HD/Live.m3u8' },
+    { id:'nove', name:'Nove',           url:'https://streaming.aurora.enhanced.live/live/mpc/enl0eG1mLmVncmVzcy5mZDJ2eHI=/out/v1/IT_SIMULCAST/NOVE/CMAF/index.m3u8' },
+    { id:'rai3bz', name:'Rai 3 TGR Bozen', url:'https://it.heissa.de/rai3bz.php' },
+  ];
+  const v = document.getElementById('v'), nav = document.getElementById('nav'), info = document.getElementById('info');
+  let hls = null;
+  const DEBUG = /[?&]debug/.test(location.search), logEl = document.getElementById('log');
+  if (DEBUG) logEl.style.display = 'block';
+  function log(m) {
+    if (!DEBUG) return;
+    const b = v.buffered, r = [];
+    for (let i = 0; i < b.length; i++) r.push(b.start(i).toFixed(1) + '-' + b.end(i).toFixed(1));
+    logEl.textContent = new Date().toTimeString().slice(0, 8) + ' t=' + v.currentTime.toFixed(1) + ' buf=[' + r.join(' ') + '] ' + m + '\n' + logEl.textContent.slice(0, 20000);
+  }
+  v.addEventListener('pause', () => log('event pause'));
+  v.addEventListener('play', () => log('event play'));
+  for (const e of ['waiting', 'stalled', 'seeking', 'ended', 'error']) v.addEventListener(e, () => log('event ' + e));
+
+  function play(c) {
+    for (const b of nav.querySelectorAll('button')) b.classList.toggle('on', b.dataset.id === c.id);
+    info.innerHTML = c.name + ' &middot; <a href="' + c.url + '">Stream direkt</a>';
+    history.replaceState(null, '', '#' + c.id);
+    if (hls) { hls.destroy(); hls = null; }
+    if (window.Hls && Hls.isSupported()) {
+      hls = new Hls({ maxBufferHole: 1.0, nudgeMaxRetry: 10, liveSyncDurationCount: 3, maxBufferLength: 30, manifestLoadingTimeOut: 30000, manifestLoadingMaxRetry: 4 });
+      hls.on(Hls.Events.ERROR, (e, d) => {
+        log('hls ' + (d.fatal ? 'FATAL ' : '') + d.type + ' ' + d.details);
+        if (d.fatal && d.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+        else if (d.fatal && d.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+      });
+      hls.on(Hls.Events.LEVEL_SWITCHED, (e, d) => log('level ' + d.level + ' ' + (hls.levels[d.level] || {}).height + 'p'));
+      hls.loadSource(c.url); hls.attachMedia(v);
+    }
+    else if (v.canPlayType('application/vnd.apple.mpegurl')) { v.src = c.url; }
+    else { info.textContent = 'Browser kann kein HLS.'; return; }
+    v.play().catch(() => {});
+  }
+  for (const c of CH) {
+    const g = document.createElement('span'); g.className = 'ch';
+    const b = document.createElement('button'); b.textContent = c.name; b.dataset.id = c.id;
+    b.onclick = () => play(c);
+    const a = document.createElement('a'); a.className = 'vlc'; a.href = c.id + '.m3u'; a.textContent = 'VLC';
+    a.title = c.name + ' in VLC öffnen'; a.onclick = () => v.pause();
+    g.append(b, a); nav.appendChild(g);
+  }
+  play(CH.find(c => '#' + c.id === location.hash) || CH[0]);
+</script>
+</body>
+</html>

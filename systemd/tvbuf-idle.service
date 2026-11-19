@@ -1,0 +1,6 @@
+[Unit]
+Description=Stop on-demand HLS buffers without viewers
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/tvbuf_idle.sh

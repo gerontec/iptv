@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ORF 1</title>
+<style>
+  :root { --bg:#111; --fg:#eee; --muted:#999; --link:#8ab4f8; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.4 system-ui,sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:16px; }
+  video { width:100%; aspect-ratio:16/9; background:#000; border-radius:6px; }
+  h1 { font-size:1.2em; margin:0 0 12px; }
+  p { color:var(--muted); margin:10px 0 0; }
+  a { color:var(--link); }
+</style>
+</head>
+<body>
+<main>
+  <h1>ORF 1 &middot; Kabel (FritzBox) &middot; 6 min Timeshift</h1>
+  <video id="v" controls autoplay muted playsinline></video>
+  <p>Stream: <a href="orf1/orf1.m3u8">orf1/orf1.m3u8</a> &middot; Kodi/VLC: <a href="list.m3u">list.m3u</a></p>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
+<script>
+  const v = document.getElementById('v'), src = 'orf1/orf1.m3u8';
+  if (v.canPlayType('application/vnd.apple.mpegurl')) { v.src = src; }
+  else if (window.Hls && Hls.isSupported()) { const h = new Hls({liveSyncDurationCount: 3}); h.loadSource(src); h.attachMedia(v); }
+  else { v.outerHTML = '<p>Browser kann kein HLS – <a href="' + src + '">Stream direkt öffnen</a>.</p>'; }
+</script>
+</body>
+</html>

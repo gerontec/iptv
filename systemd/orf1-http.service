@@ -1,0 +1,12 @@
+[Unit]
+Description=ORF1 HLS HTTP Server (:8088, dual-stack)
+After=network-online.target
+
+[Service]
+WorkingDirectory=/srv/orf1hls
+ExecStart=/usr/bin/python3 -m http.server 8181 --bind ::
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

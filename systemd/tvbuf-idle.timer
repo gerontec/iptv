@@ -1,0 +1,9 @@
+[Unit]
+Description=Check on-demand HLS buffers for viewers every minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+
+[Install]
+WantedBy=timers.target

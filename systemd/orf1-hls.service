@@ -1,0 +1,13 @@
+[Unit]
+Description=ORF1 HLS Timeshift (6min DVR, IPv4-Pull von FritzBox)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStartPre=/bin/bash -c 'rm -f /srv/orf1hls/*.ts /srv/orf1hls/*.m3u8'
+ExecStart=/usr/bin/ffmpeg -nostdin -hide_banner -loglevel warning -rtsp_transport udp -i "rtsp://192.168.178.1:554/?avm=1&freq=466&bw=8&msys=dvbc&mtype=256qam&sr=6900&specinv=1&pids=0,16,17,18,20,7660,7662,7663,7668" -map 0:v:0 -map 0:a:0 -c copy -f hls -hls_time 2 -hls_list_size 180 -hls_flags delete_segments+omit_endlist+program_date_time -hls_segment_filename /srv/orf1hls/seg_%%05d.ts /srv/orf1hls/orf1.m3u8
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

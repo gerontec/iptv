@@ -1,0 +1,5 @@
+[Unit]
+Description=ORF1 HLS watchdog (restart on frozen playlist)
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/orf1_hls_watchdog.sh

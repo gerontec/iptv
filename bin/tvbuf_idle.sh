@@ -1,0 +1,15 @@
+#!/bin/bash
+# Stop on-demand HLS buffers nobody has requested for IDLE seconds.
+# Viewers' playlist requests touch /run/tvbuf/<ch>.seen (see /var/www/it/<ch>.php).
+IDLE=300
+CHANNELS="rai3bz"
+for ch in $CHANNELS; do
+    svc=$ch-hls.service
+    systemctl is-active -q $svc || continue
+    seen=/run/tvbuf/$ch.seen
+    age=$(( $(date +%s) - $(stat -c %Y "$seen" 2>/dev/null || echo 0) ))
+    if [ "$age" -gt "$IDLE" ]; then
+        logger -t tvbuf "stop $svc: no viewer for ${age}s"
+        systemctl stop $svc
+    fi
+done
