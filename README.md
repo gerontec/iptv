@@ -11,7 +11,7 @@ every stream is copied (`-c copy`), so one channel costs about 1 % of a CPU core
 | Region | Served by | Why |
 |---|---|---|
 | Europe (at, it, ... and cable TV) | the home server (`<cc>.heissa.de` -> dell) | European sources and the FRITZ!Box cable tuner are reachable from the home line; viewers at home get the stream in one LAN hop over IPv6. |
-| USA (`us.heissa.de`) and Russia (`ru.heissa.de`) | heissa.de, a VPS in the USA | Those sources need a US exit; heissa relays them itself (local hls-relay, `iptv-country.conf`), the home server is not involved. |
+| USA (`us.heissa.de`) and Russia (`ru.heissa.de`) | heissa.de, a VPS in the USA | US sources need a US exit. Russian channels are blocked inside the EU (sanctions since 2022: EU ISPs and CDNs must not carry them), so they cannot be fetched from a European line at all. heissa relays both itself (local hls-relay, `iptv-country.conf`); the home server is not involved. |
 
 External viewers reach the European sites over IPv4 through heissa.de, which proxies to the home
 server over OpenVPN; at home the AAAA record points straight to the home server.
