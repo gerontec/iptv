@@ -6,6 +6,16 @@ and free-to-air internet streams, re-served as HLS to browsers, VLC and Kodi.
 Runs on one Linux box (Debian/Ubuntu, systemd, Apache with mod_php, ffmpeg). No transcoding:
 every stream is copied (`-c copy`), so one channel costs about 1 % of a CPU core.
 
+## Where each region is served from
+
+| Region | Served by | Why |
+|---|---|---|
+| Europe (at, it, ... and cable TV) | the home server (`<cc>.heissa.de` -> dell) | European sources and the FRITZ!Box cable tuner are reachable from the home line; viewers at home get the stream in one LAN hop over IPv6. |
+| USA (`us.heissa.de`) and Russia (`ru.heissa.de`) | heissa.de, a VPS in the USA | Those sources need a US exit; heissa relays them itself (local hls-relay, `iptv-country.conf`), the home server is not involved. |
+
+External viewers reach the European sites over IPv4 through heissa.de, which proxies to the home
+server over OpenVPN; at home the AAAA record points straight to the home server.
+
 ## Building blocks
 
 | Part | Files | What it does |
