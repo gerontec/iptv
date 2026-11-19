@@ -66,7 +66,7 @@ With the on-demand buffer nothing is downloaded while nobody watches.
 
 ## Generic buffer: tvbuf@<id> (music.heissa.de)
 
-87 free music and culture channels (H.264: classical, culture, jazz, pop & world), each only buffered while someone watches.
+88 free music and culture channels (H.264: classical, culture, jazz, pop & world), each only buffered while someone watches.
 
 - `/etc/tvbuf/<id>.conf`: `SRC=<HLS URL>` and `PROGRAM=<variant index>` (highest variant up to 5 Mbit/s,
   so ffmpeg downloads exactly one variant).
