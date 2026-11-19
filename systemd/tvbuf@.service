@@ -12,3 +12,4 @@ ExecStart=/usr/bin/ffmpeg -nostdin -hide_banner -loglevel warning -rw_timeout 15
 Restart=always
 RestartSec=5
 SuccessExitStatus=255
+TimeoutStopSec=10

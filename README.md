@@ -11,6 +11,7 @@ every stream is copied (`-c copy`), so one channel costs about 1 % of a CPU core
 | Region | Served by | Why |
 |---|---|---|
 | Europe (at, it, ..., cable TV) and music TV | the home server (`<cc>.heissa.de` -> dell) | European sources and the FRITZ!Box cable tuner are reachable from the home line; viewers at home get the stream in one LAN hop over IPv6. |
+| China (`cn.heissa.de`) | the home server (tvbuf, 57 channels) | 556 iptv-org China streams tested from the home line: 110 reachable; only broadcasters own servers kept (provincial/city stations, CGTN, CCTV+), US-hosted restreams of CCTV 1-17 dropped; H.264 only. |
 | Russia, directly receivable (`ru2.heissa.de`) | the home server (tvbuf, 68 channels) | Of the 107 channels on ru.heissa.de, 75 reach the home line directly (tested 19.11.2026); 68 pass the ffmpeg test. |
 | USA (`us.heissa.de`) and Russia (`ru.heissa.de`) | heissa.de, a VPS in the USA | US sources need a US exit. Russian channels are blocked inside the EU (sanctions since 2022: EU ISPs and CDNs must not carry them), so they cannot be fetched from a European line at all. heissa relays both itself (local hls-relay, `iptv-country.conf`); the home server is not involved. |
 
